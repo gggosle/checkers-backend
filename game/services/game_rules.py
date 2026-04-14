@@ -173,7 +173,6 @@ def apply_move(state: GameState, from_pos: Position, to_move: Move) -> GameState
                 state,
                 board=new_board,
                 must_jump_piece=Position(row=to_move.row, col=to_move.col),
-                selected_piece=None,
             )
 
     next_player = next(p for p in state.players if p.id != state.current_player.id)
@@ -183,7 +182,6 @@ def apply_move(state: GameState, from_pos: Position, to_move: Move) -> GameState
         board=new_board,
         must_jump_piece=None,
         current_player=next_player,
-        selected_piece=None,
     )
 
 def calculate_winner(state: GameState) -> Player | None:

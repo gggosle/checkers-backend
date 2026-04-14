@@ -52,4 +52,3 @@ class GameState:
     players: list[Player]
     current_player: Player
     must_jump_piece: Optional[Position]
-    selected_piece: Optional[Position]

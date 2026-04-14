@@ -16,7 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from game import views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/games/', views.initialize_game, name='initialize_game'),
+    path('api/games/<uuid:id>/', views.fetch_game, name='fetch_game'),
+    path('api/games/<uuid:id>/move/', views.attempt_move, name='attempt_move'),
+    path('api/games/<uuid:id>/undo/', views.undo_move, name='undo_move'),
 ]

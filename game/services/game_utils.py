@@ -22,5 +22,5 @@ def generate_players() -> list[Player]:
 def create_initial_game_state() -> GameState:
     players = generate_players()
     board = create_initial_board(GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
-    return GameState(board, players, players[0], None, None)
+    return GameState(board, players, players[0], None)
 
