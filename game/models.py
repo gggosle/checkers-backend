@@ -16,6 +16,7 @@ class Game(models.Model):
 
 
 class MoveEntry(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='moves')
     player_dir = models.IntegerField()
     from_pos = models.JSONField(help_text="{row: int, col: int}")

@@ -14,15 +14,14 @@ class GameTests(APITestCase):
         self.assertIsNone(response.data['winner'])
 
     def test_fetch_game(self):
-        game = Game.objects.create(
-            board=[[None]*8 for _ in range(8)],
-            players=[{'id': 1}, {'id': 2}],
-            current_player={'id': 1}
-        )
-        url = reverse('fetch_game', args=[game.id])
+        url = reverse('initialize_game')
+        init_res = self.client.post(url)
+        game_id = init_res.data['id']
+        
+        url = reverse('fetch_game', args=[game_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(str(response.data['id']), str(game.id))
+        self.assertEqual(str(response.data['id']), str(game_id))
 
     def test_attempt_move(self):
         init_url = reverse('initialize_game')
@@ -72,4 +71,20 @@ class GameTests(APITestCase):
         }
         response = self.client.post(move_url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['current_player']['id'], GameRules.PLAYER_1_ID)
+
+    def test_undo_multi_jump(self):
+        init_url = reverse('initialize_game')
+        init_res = self.client.post(init_url)
+        game_id = init_res.data['id']
+        game = Game.objects.get(id=game_id)
+        
+        MoveEntry.objects.create(game=game, player_dir=1, from_pos={'row': 2, 'col': 1}, to_pos={'row': 4, 'col': 3}, is_jump=True)
+        MoveEntry.objects.create(game=game, player_dir=1, from_pos={'row': 4, 'col': 3}, to_pos={'row': 6, 'col': 5}, is_jump=True)
+        
+        undo_url = reverse('undo_move', args=[game.id])
+        response = self.client.post(undo_url)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(MoveEntry.objects.filter(game=game).count(), 0)
         self.assertEqual(response.data['current_player']['id'], GameRules.PLAYER_1_ID)
