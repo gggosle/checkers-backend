@@ -35,7 +35,6 @@ class MoveEntry:
     promoted_to_king: bool
 
 
-
 @dataclass
 class Move:
     row: int

@@ -23,84 +23,71 @@ def create_new_game() -> Game:
 def get_game(game_id: str) -> Game:
     return get_object_or_404(Game, id=game_id)
 
-def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
-    game_model = Game.objects.get(id=game_id)
-
-    current_state = GameState(
-        board=[[Checker(**c) if c else None for c in row] for row in game_model.board],
-        players=[Player(**p) for p in game_model.players],
-        current_player=Player(**game_model.current_player),
-        must_jump_piece=Position(**game_model.must_jump_piece) if game_model.must_jump_piece else None,
+def _to_state(model):
+    return GameState(
+        board=[[Checker(**c) if c else None for c in row] for row in model.board],
+        players=[Player(**p) for p in model.players],
+        current_player=Player(**model.current_player),
+        must_jump_piece=Position(**model.must_jump_piece) if model.must_jump_piece else None,
     )
 
-    from_pos = Position(row=from_dict['r'], col=from_dict['c'])
-    
-    jumps_available = any_player_jumps_available(current_state.board, current_state.current_player.move_dir)
-    valid_moves = get_valid_moves(
-        current_state.board,
-        current_state.current_player.move_dir,
-        current_state.must_jump_piece,
-        jumps_available,
-        from_pos.row,
-        from_pos.col
-    )
-    
-    target_move = next((m for m in valid_moves if m.row == to_dict['r'] and m.col == to_dict['c']), None)
-    if not target_move:
-        return game_model
+def _update_game_model(model, state: GameState):
+    data = asdict(state)
+    model.board = data['board']
+    model.current_player = data['current_player']
+    model.must_jump_piece = data['must_jump_piece']
+    winner = calculate_winner(state)
+    if winner: model.winner = winner.id
+    model.save()
 
-    updated_state = apply_move(current_state, from_pos, target_move)
-    state_dict = asdict(updated_state)
-
-    game_model.board = state_dict['board']
-    game_model.current_player = state_dict['current_player']
-    game_model.must_jump_piece = state_dict['must_jump_piece']
-    
-    winner_player = calculate_winner(updated_state)
-    if winner_player:
-        game_model.winner = winner_player.id
-    
-    game_model.save()
-
-    piece = current_state.board[from_pos.row][from_pos.col]
+def _record_move(model, cur_state: GameState, from_pos: Position, target):
     from .game_rules import check_promotion
-    is_promoted = check_promotion(piece, target_move.row)
-
+    is_promoted = check_promotion(cur_state.board[from_pos.row][from_pos.col], target.row)
     MoveEntry.objects.create(
-        game=game_model,
-        player_dir=current_state.current_player.move_dir,
+        game=model, 
+        player_dir=cur_state.current_player.move_dir, 
         from_pos=asdict(from_pos),
-        to_pos={'row': target_move.row, 'col': target_move.col},
-        is_jump=target_move.type == 'jump',
+        to_pos={'row': target.row, 'col': target.col}, 
+        is_jump=target.type == 'jump',
         is_promoted=is_promoted
     )
 
+def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
+    game_model = Game.objects.get(id=game_id)
+    current_state = _to_state(game_model)
+    from_pos = Position(row=from_dict['r'], col=from_dict['c'])
+    
+    jumps = any_player_jumps_available(current_state.board, current_state.current_player.move_dir)
+    valid = get_valid_moves(current_state.board, current_state.current_player.move_dir, current_state.must_jump_piece, jumps, from_pos.row, from_pos.col)
+    
+    target = next((m for m in valid if m.row == to_dict['r'] and m.col == to_dict['c']), None)
+    if not target: return game_model
+
+    upd = apply_move(current_state, from_pos, target)
+    _update_game_model(game_model, upd)
+    _record_move(game_model, current_state, from_pos, target)
     return game_model
+
+def _get_ids_to_revert(game, player_dir):
+    ids = []
+    for m in MoveEntry.objects.filter(game=game).order_by('-created_at'):
+        if m.player_dir != player_dir: break
+        ids.append(m.id)
+    return ids
 
 def revert_last_move(game_id: str) -> Game:
     game = get_object_or_404(Game, id=game_id)
-    last_move = MoveEntry.objects.filter(game=game).last()
-    if not last_move: return game
-
-    player_dir = last_move.player_dir
-    all_moves = MoveEntry.objects.filter(game=game).order_by('-created_at')
+    last = MoveEntry.objects.filter(game=game).last()
+    if not last: return game
     
-    ids_to_delete = []
-    for move in all_moves:
-        if move.player_dir != player_dir: break
-        ids_to_delete.append(move.id)
-    
-    MoveEntry.objects.filter(id__in=ids_to_delete).delete()
+    MoveEntry.objects.filter(id__in=_get_ids_to_revert(game, last.player_dir)).delete()
 
-    remaining_moves = MoveEntry.objects.filter(game=game)
-    history = [EntityMoveEntry(m.id, 0, Position(**m.from_pos), Position(**m.to_pos),
-                               m.is_jump, m.is_promoted) for m in remaining_moves]
+    moves = MoveEntry.objects.filter(game=game)
+    history = [EntityMoveEntry(m.id, 0, Position(**m.from_pos), Position(**m.to_pos), m.is_jump, m.is_promoted) for m in moves]
     
-    new_board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT,
-                                  GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
-
-    game.board = [[asdict(c) if c else None for c in row] for row in new_board]
-    game.current_player = next(p for p in game.players if p['move_dir'] == player_dir)
+    board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
+    game.board = [[asdict(c) if c else None for c in row] for row in board]
+    game.current_player = next(p for p in game.players if p['move_dir'] == last.player_dir)
     game.must_jump_piece, game.winner = None, None
     game.save()
     return game
