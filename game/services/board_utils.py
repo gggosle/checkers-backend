@@ -2,7 +2,6 @@ from __future__ import annotations
 from typing import List, Optional
 from .game_rules import is_black_square
 from .entities import Board, Checker, MoveEntry
-from .constants import Color
 
 def create_initial_board(board_size: int, piece_rows_count: int, move_dir_up: int, move_dir_down: int) -> Board:
     board: Board = []
@@ -20,7 +19,7 @@ def create_initial_board(board_size: int, piece_rows_count: int, move_dir_up: in
             if row < piece_rows_count:
                 row_array.append(Checker(
                     id=stable_id,
-                    color=Color.WHITE,
+                    color='white',
                     row=row,
                     col=col,
                     direction=move_dir_up,
@@ -29,7 +28,7 @@ def create_initial_board(board_size: int, piece_rows_count: int, move_dir_up: in
             elif row >= board_size - piece_rows_count:
                 row_array.append(Checker(
                     id=stable_id,
-                    color=Color.BLACK,
+                    color='black',
                     row=row,
                     col=col,
                     direction=move_dir_down,

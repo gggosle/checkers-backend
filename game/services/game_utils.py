@@ -6,14 +6,14 @@ def generate_players() -> list[Player]:
     player1 = Player(
         id= GameRules.PLAYER_1_ID,
         name='Player 1',
-        color=Color.WHITE,
+        color='white',
         move_dir=GameRules.MOVE_DIR_UP,
     )
 
     player2 = Player(
         id=GameRules.PLAYER_2_ID,
         name='Player 2',
-        color=Color.BLACK,
+        color='black',
         move_dir=GameRules.MOVE_DIR_DOWN,
     )
 

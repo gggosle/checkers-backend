@@ -1,4 +1,5 @@
-from enum import Enum
+from typing import Literal
+
 
 class GameConfig:
     BOARD_SIZE = 8
@@ -14,11 +15,6 @@ class GameRules:
     PLAYER_1_ID = 1
     PLAYER_2_ID = 2
 
+Color = Literal['white', 'black']
 
-class Color(Enum):
-    WHITE = 'white'
-    BLACK = 'black'
-
-class MoveType(Enum):
-    MOVE = 'move'
-    JUMP = 'jump'
+MoveType = Literal['move', 'jump']

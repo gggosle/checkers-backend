@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional
-from .entities import Checker, Board, Move, Position, GameState, MoveType, Player
+from .entities import Checker, Board, Move, Position, GameState, Player
 from .constants import GameConfig
 from dataclasses import replace
 
@@ -40,7 +40,7 @@ def try_calculate_jump(board: Board, piece: Checker, target_piece: Checker, dr: 
         return Move(
             row=jump_row,
             col=jump_col,
-            type=MoveType.JUMP,
+            type='jump',
             captured=Position(row=target_piece.row, col=target_piece.col)
         )
     return None
@@ -56,7 +56,7 @@ def calculate_target_move(board: Board, piece: Checker, row: int, col: int, dr: 
 
     target_piece = get_piece(board, target_row, target_col)
     if not target_piece:
-        return Move(row=target_row, col=target_col, type=MoveType.MOVE, captured=None)
+        return Move(row=target_row, col=target_col, type='move', captured=None)
 
     return try_calculate_jump(board, piece, target_piece, dr, dc)
 
@@ -69,7 +69,7 @@ def has_jump_available(board: Board, row: int, col: int) -> bool:
     directions = get_possible_directions(piece)
     for d in directions:
         move = calculate_target_move(board, piece, row, col, d['dr'], d['dc'])
-        if move and move.type == MoveType.JUMP:
+        if move and move.type == 'jump':
             return True
     return False
 
@@ -107,7 +107,7 @@ def get_valid_moves(
     moves = calculate_potential_moves(board, row, col)
 
     if has_jumps_available:
-        return [move for move in moves if move.type == MoveType.JUMP]
+        return [move for move in moves if move.type == 'jump']
 
     return moves
 
@@ -153,7 +153,7 @@ def apply_move(state: GameState, from_pos: Position, to_move: Move) -> GameState
 
     new_board = [row[:] for row in state.board]
 
-    is_jump = to_move.type == MoveType.JUMP
+    is_jump = to_move.type == 'jump'
     is_promoted = check_promotion(piece, to_move.row)
 
     moved_piece = replace(piece, row=to_move.row, col=to_move.col)

@@ -1,33 +1,22 @@
 from dataclasses import asdict
 from django.shortcuts import get_object_or_404
 from game.models import Game, MoveEntry
-from .constants import MoveType, GameConfig, GameRules
+from .constants import GameConfig, GameRules
 from .game_rules import apply_move, get_valid_moves, calculate_winner, any_player_jumps_available
-from .entities import GameState, Player, Position, Move, Checker
+from .entities import GameState, Player, Position, Checker
 from .game_utils import create_initial_game_state
-
-def custom_asdict(obj):
-    if obj is None:
-        return None
-    if isinstance(obj, list):
-        return [custom_asdict(i) for i in obj]
-    if isinstance(obj, dict):
-        return {k: custom_asdict(v) for k, v in obj.items()}
-    from enum import Enum
-    if isinstance(obj, Enum):
-        return obj.value
-    if hasattr(obj, '__dataclass_fields__'):
-        return custom_asdict(asdict(obj))
-    return obj
 
 def create_new_game() -> Game:
     state = create_initial_game_state()
+    state_dict = asdict(state)
+
     game_model = Game.objects.create(
-        board=custom_asdict(state.board),
-        players=custom_asdict(state.players),
-        current_player=custom_asdict(state.current_player),
-        must_jump_piece=custom_asdict(state.must_jump_piece) if state.must_jump_piece else None,
+        board=state_dict['board'],
+        players=state_dict['players'],
+        current_player=state_dict['current_player'],
+        must_jump_piece=state_dict['must_jump_piece']
     )
+
     return game_model
 
 def get_game(game_id: str) -> Game:
@@ -60,10 +49,17 @@ def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
         return game_model
 
     updated_state = apply_move(current_state, from_pos, target_move)
+    state_dict = asdict(updated_state)
 
-    game_model.board = custom_asdict(updated_state.board)
-    game_model.current_player = custom_asdict(updated_state.current_player)
-    game_model.must_jump_piece = custom_asdict(updated_state.must_jump_piece) if updated_state.must_jump_piece else None
+    game_model = Game.objects.create(
+        board=state_dict['board'],
+        players=state_dict['players'],
+        current_player=state_dict['current_player'],
+        must_jump_piece=state_dict['must_jump_piece']
+    )
+    game_model.board = state_dict['board']
+    game_model.current_player = state_dict['current_player']
+    game_model.must_jump_piece = state_dict['must_jump_piece']
     
     winner_player = calculate_winner(updated_state)
     if winner_player:
@@ -76,7 +72,7 @@ def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
         player_dir=current_state.current_player.move_dir,
         from_pos=asdict(from_pos),
         to_pos={'r': target_move.row, 'c': target_move.col},
-        is_jump=target_move.type == MoveType.JUMP,
+        is_jump=target_move.type == 'jump',
         is_promoted=False
     )
 
@@ -130,9 +126,9 @@ def revert_last_move(game_id: str) -> Game:
         if target_move:
             current_state = apply_move(current_state, from_pos, target_move)
 
-    game_model.board = custom_asdict(current_state.board)
-    game_model.current_player = custom_asdict(current_state.current_player)
-    game_model.must_jump_piece = custom_asdict(current_state.must_jump_piece) if current_state.must_jump_piece else None
+    game_model.board = asdict(current_state.board)
+    game_model.current_player = asdict(current_state.current_player)
+    game_model.must_jump_piece = (asdict(current_state.must_jump_piece)) if current_state.must_jump_piece else None
     game_model.winner = None
     game_model.save()
     
