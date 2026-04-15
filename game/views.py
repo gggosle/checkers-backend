@@ -34,8 +34,8 @@ def attempt_move(request, id):
     clean_data = payload.validated_data
     updated_game = orchestrator.process_move_request(
         game_id=id,
-        from_dict=clean_data['from'],
-        to_dict=clean_data['to']
+        from_dict=clean_data['from_pos'],
+        to_dict=clean_data['to_pos']
     )
 
     serializer = GameStateSerializer(updated_game)

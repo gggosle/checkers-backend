@@ -13,17 +13,3 @@ class PositionSerializer(serializers.Serializer):
 class MovePayloadSerializer(serializers.Serializer):
     from_pos = PositionSerializer()
     to_pos = PositionSerializer()
-
-    def to_internal_value(self, data):
-
-        internal_data = data.copy()
-        if 'from' in data:
-            internal_data['from_pos'] = data['from']
-        if 'to' in data:
-            internal_data['to_pos'] = data['to']
-        
-        ret = super().to_internal_value(internal_data)
-        return {
-            'from': ret['from_pos'],
-            'to': ret['to_pos']
-        }
