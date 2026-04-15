@@ -92,7 +92,7 @@ def revert_last_move(game_id: str) -> Game:
     
     MoveEntry.objects.filter(id__in=ids_to_delete).delete()
 
-    remaining_moves = MoveEntry.objects.filter(game=game).order_by('created_at')
+    remaining_moves = MoveEntry.objects.filter(game=game)
     history = [EntityMoveEntry(m.id, 0, Position(**m.from_pos), Position(**m.to_pos),
                                m.is_jump, m.is_promoted) for m in remaining_moves]
     
