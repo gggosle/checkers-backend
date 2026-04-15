@@ -17,15 +17,15 @@ def initialize_game(request):
 
 
 @api_view(['GET'])
-def fetch_game(request, id):
+def fetch_game(request, game_id):
     """GET /api/games/{id}/"""
-    game = orchestrator.get_game(id)
+    game = orchestrator.get_game(game_id)
     serializer = GameStateSerializer(game)
     return Response(serializer.data)
 
 
 @api_view(['POST'])
-def attempt_move(request, id):
+def attempt_move(request, game_id):
     """POST /api/games/{id}/move/"""
     payload = MovePayloadSerializer(data=request.data)
     if not payload.is_valid():
@@ -33,7 +33,7 @@ def attempt_move(request, id):
 
     clean_data = payload.validated_data
     updated_game = orchestrator.process_move_request(
-        game_id=id,
+        game_id,
         from_dict=clean_data['from_pos'],
         to_dict=clean_data['to_pos']
     )
@@ -43,11 +43,11 @@ def attempt_move(request, id):
 
 
 @api_view(['POST'])
-def undo_move(request, id):
+def undo_move(request, game_id):
     """POST /api/games/{id}/undo/"""
-    get_object_or_404(Game, id=id)
+    get_object_or_404(Game, id=game_id)
 
-    updated_game = orchestrator.revert_last_move(game_id=id)
+    updated_game = orchestrator.revert_last_move(game_id)
 
     serializer = GameStateSerializer(updated_game)
     return Response(serializer.data, status=status.HTTP_200_OK)
