@@ -55,12 +55,12 @@ def _record_move(model, cur_state: GameState, from_pos: Position, target):
 def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
     game_model = Game.objects.get(id=game_id)
     current_state = _to_state(game_model)
-    from_pos = Position(row=from_dict['r'], col=from_dict['c'])
+    from_pos = Position(row=from_dict['row'], col=from_dict['col'])
     
     jumps = any_player_jumps_available(current_state.board, current_state.current_player.move_dir)
     valid = get_valid_moves(current_state.board, current_state.current_player.move_dir, current_state.must_jump_piece, jumps, from_pos.row, from_pos.col)
     
-    target = next((m for m in valid if m.row == to_dict['r'] and m.col == to_dict['c']), None)
+    target = next((m for m in valid if m.row == to_dict['row'] and m.col == to_dict['col']), None)
     if not target: return game_model
 
     upd = apply_move(current_state, from_pos, target)

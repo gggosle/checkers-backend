@@ -7,8 +7,8 @@ class GameStateSerializer(serializers.ModelSerializer):
         fields = ['id', 'board', 'current_player', 'players', 'must_jump_piece', 'winner']
 
 class PositionSerializer(serializers.Serializer):
-    r = serializers.IntegerField(min_value=0, max_value=7)
-    c = serializers.IntegerField(min_value=0, max_value=7)
+    row = serializers.IntegerField(min_value=0, max_value=7)
+    col = serializers.IntegerField(min_value=0, max_value=7)
 
 class MovePayloadSerializer(serializers.Serializer):
     from_pos = PositionSerializer()

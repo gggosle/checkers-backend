@@ -30,8 +30,8 @@ class GameTests(APITestCase):
 
         move_url = reverse('attempt_move', args=[game_id])
         payload = {
-            'from_pos': {'r': 2, 'c': 1},
-            'to_pos': {'r': 3, 'c': 0}
+            'from_pos': {'row': 2, 'col': 1},
+            'to_pos': {'row': 3, 'col': 0}
         }
         response = self.client.post(move_url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -46,8 +46,8 @@ class GameTests(APITestCase):
         
         move_url = reverse('attempt_move', args=[game_id])
         payload = {
-            'from_pos': {'r': 2, 'c': 1},
-            'to_pos': {'r': 3, 'c': 0}
+            'from_pos': {'row': 2, 'col': 1},
+            'to_pos': {'row': 3, 'col': 0}
         }
         self.client.post(move_url, payload, format='json')
         
@@ -66,8 +66,8 @@ class GameTests(APITestCase):
         
         move_url = reverse('attempt_move', args=[game_id])
         payload = {
-            'from_pos': {'r': 3, 'c': 3},
-            'to_pos': {'r': 4, 'c': 4}
+            'from_pos': {'row': 3, 'col': 3},
+            'to_pos': {'row': 4, 'col': 4}
         }
         response = self.client.post(move_url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
