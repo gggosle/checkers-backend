@@ -27,7 +27,6 @@ class Position:
 
 @dataclass
 class MoveEntry:
-    id: int
     player_id: int
     from_pos: Position
     to_pos: Position

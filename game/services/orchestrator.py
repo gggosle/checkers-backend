@@ -83,7 +83,7 @@ def revert_last_move(game_id: str) -> Game:
     MoveEntry.objects.filter(id__in=_get_ids_to_revert(game, last.player_dir)).delete()
 
     moves = MoveEntry.objects.filter(game=game)
-    history = [EntityMoveEntry(m.id, 0, Position(**m.from_pos), Position(**m.to_pos), m.is_jump, m.is_promoted) for m in moves]
+    history = [EntityMoveEntry(Position(**m.from_pos), Position(**m.to_pos), m.is_jump, m.is_promoted) for m in moves]
     
     board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
     game.board = [[asdict(c) if c else None for c in row] for row in board]
