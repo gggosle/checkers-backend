@@ -15,13 +15,9 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from game import views
+from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/games/', views.initialize_game, name='initialize_game'),
-    path('api/games/<uuid:game_id>/', views.fetch_game, name='fetch_game'),
-    path('api/games/<uuid:game_id>/move/', views.attempt_move, name='attempt_move'),
-    path('api/games/<uuid:game_id>/undo/', views.undo_move, name='undo_move'),
+    path('api/', include('game.urls')),
 ]

@@ -22,9 +22,6 @@ def create_new_game() -> Game:
 
     return game_model
 
-def get_game(game_id: str) -> Game:
-    return get_object_or_404(Game, id=game_id)
-
 def _to_state(model):
     return GameState(
         board=[[Checker(**c) if c else None for c in row] for row in model.board],
