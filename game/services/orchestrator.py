@@ -3,9 +3,9 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from game.models import Game, MoveEntry
 from .constants import GameConfig, GameRules
-from .game_rules import apply_move, get_valid_moves, calculate_winner, any_player_jumps_available
+from .game_rules import apply_move, get_valid_moves, calculate_winner, any_player_jumps_available, has_jump_available
 from .board_utils import reconstruct_board
-from .entities import GameState, Player, Position, Checker, MoveEntry as EntityMoveEntry
+from .entities import GameState, Player, Position, Checker, MoveEntry as EntityMoveEntry, Board
 from .game_utils import create_initial_game_state
 from game.exceptions import InvalidMoveError
 
@@ -78,6 +78,13 @@ def _get_ids_to_revert(game, player_dir):
         ids.append(m.id)
     return ids
 
+def _calculate_must_jump_piece(last_move: MoveEntry, board: Board):
+    if last_move and last_move.is_jump:
+        further_jumps = has_jump_available(board, last_move.to_pos.row, last_move.to_pos.col)
+        if further_jumps:
+            return last_move.to_pos
+    return None
+
 def revert_last_move(game_id: str) -> Game:
     game = get_object_or_404(Game, id=game_id)
     last = MoveEntry.objects.filter(game=game).last()
@@ -87,10 +94,13 @@ def revert_last_move(game_id: str) -> Game:
 
     moves = MoveEntry.objects.filter(game=game)
     history = [EntityMoveEntry(0, Position(**m.from_pos), Position(**m.to_pos), m.is_jump, m.is_promoted) for m in moves]
+    last_move = history[-1] if history else None
     
     board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
     game.board = [[asdict(c) if c else None for c in row] for row in board]
     game.current_player_id = next(p for p in game.players if p['move_dir'] == last.player_dir)
-    game.must_jump_piece, game.winner_id = None, None
+    game.winner = None
+    game.must_jump_piece = _calculate_must_jump_piece(last_move, game.board)
+
     game.save()
     return game
