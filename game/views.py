@@ -28,8 +28,7 @@ def fetch_game(request, game_id):
 def attempt_move(request, game_id):
     """POST /api/games/{id}/move/"""
     payload = MovePayloadSerializer(data=request.data)
-    if not payload.is_valid():
-        return Response(payload.errors, status=status.HTTP_400_BAD_REQUEST)
+    payload.is_valid(raise_exception=True)
 
     clean_data = payload.validated_data
     updated_game = orchestrator.process_move_request(
