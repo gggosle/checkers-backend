@@ -6,6 +6,7 @@ from .game_rules import apply_move, get_valid_moves, calculate_winner, any_playe
 from .board_utils import reconstruct_board
 from .entities import GameState, Player, Position, Checker, MoveEntry as EntityMoveEntry
 from .game_utils import create_initial_game_state
+from game.exceptions import InvalidMoveError
 
 def create_new_game() -> Game:
     state = create_initial_game_state()
@@ -61,7 +62,7 @@ def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
     valid = get_valid_moves(current_state.board, current_state.current_player.move_dir, current_state.must_jump_piece, jumps, from_pos.row, from_pos.col)
     
     target = next((m for m in valid if m.row == to_dict['row'] and m.col == to_dict['col']), None)
-    if not target: return game_model
+    if not target: raise InvalidMoveError("This move violates the rules of checkers.")
 
     upd = apply_move(current_state, from_pos, target)
     _update_game_model(game_model, upd)
