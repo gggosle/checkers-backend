@@ -48,5 +48,9 @@ Board = list[list[Optional[Checker]]]
 class GameState:
     board: Board
     players: list[Player]
-    current_player: Player
+    current_player_id: int
     must_jump_piece: Optional[Position]
+
+    @property
+    def current_player(self) -> Player:
+        return next(p for p in self.players if p.id == self.current_player_id)

@@ -175,26 +175,27 @@ def apply_move(state: GameState, from_pos: Position, to_move: Move) -> GameState
                 must_jump_piece=Position(row=to_move.row, col=to_move.col),
             )
 
-    next_player = next(p for p in state.players if p.id != state.current_player.id)
+    next_player_id = next(p.id for p in state.players if p.id != state.current_player_id)
 
     return replace(
         state,
         board=new_board,
         must_jump_piece=None,
-        current_player=next_player,
+        current_player_id=next_player_id,
     )
 
 def calculate_winner(state: GameState) -> Player | None:
-    jumps_available = any_player_jumps_available(state.board, state.current_player.move_dir)
+    current_player = state.current_player
+    jumps_available = any_player_jumps_available(state.board, current_player.move_dir)
 
     can_current_player_move = has_any_valid_moves(
         state.board,
-        state.current_player.move_dir,
+        current_player.move_dir,
         state.must_jump_piece,
         jumps_available
     )
 
     if not can_current_player_move:
-        return next((p for p in state.players if p.id != state.current_player.id), None)
+        return next((p for p in state.players if p.id != state.current_player_id), None)
 
     return None

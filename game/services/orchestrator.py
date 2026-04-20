@@ -28,14 +28,14 @@ def _to_state(model):
     return GameState(
         board=[[Checker(**c) if c else None for c in row] for row in model.board],
         players=[Player(**p) for p in model.players],
-        current_player=Player(**model.current_player),
+        current_player_id=model.current_player_id,
         must_jump_piece=Position(**model.must_jump_piece) if model.must_jump_piece else None,
     )
 
 def _update_game_model(model, state: GameState):
     data = asdict(state)
     model.board = data['board']
-    model.current_player = data['current_player']
+    model.current_player_id = data['current_player']
     model.must_jump_piece = data['must_jump_piece']
     winner = calculate_winner(state)
     if winner: model.winner = winner.id
@@ -46,7 +46,7 @@ def _record_move(model, cur_state: GameState, from_pos: Position, target):
     is_promoted = check_promotion(cur_state.board[from_pos.row][from_pos.col], target.row)
     MoveEntry.objects.create(
         game=model, 
-        player_dir=cur_state.current_player.move_dir, 
+        player_dir=cur_state.current_player.move_dir,
         from_pos=asdict(from_pos),
         to_pos={'row': target.row, 'col': target.col}, 
         is_jump=target.type == 'jump',
@@ -57,9 +57,10 @@ def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
     game_model = get_object_or_404(Game, id=game_id)
     current_state = _to_state(game_model)
     from_pos = Position(row=from_dict['row'], col=from_dict['col'])
+    current_player = current_state.current_player
     
-    jumps = any_player_jumps_available(current_state.board, current_state.current_player.move_dir)
-    valid = get_valid_moves(current_state.board, current_state.current_player.move_dir, current_state.must_jump_piece, jumps, from_pos.row, from_pos.col)
+    jumps = any_player_jumps_available(current_state.board, current_player.move_dir)
+    valid = get_valid_moves(current_state.board, current_player.move_dir, current_state.must_jump_piece, jumps, from_pos.row, from_pos.col)
     
     target = next((m for m in valid if m.row == to_dict['row'] and m.col == to_dict['col']), None)
     if not target: raise InvalidMoveError("This move violates the rules of checkers.")
@@ -88,7 +89,7 @@ def revert_last_move(game_id: str) -> Game:
     
     board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
     game.board = [[asdict(c) if c else None for c in row] for row in board]
-    game.current_player = next(p for p in game.players if p['move_dir'] == last.player_dir)
+    game.current_player_id = next(p for p in game.players if p['move_dir'] == last.player_dir)
     game.must_jump_piece, game.winner = None, None
     game.save()
     return game

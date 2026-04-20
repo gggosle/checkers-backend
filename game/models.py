@@ -5,7 +5,7 @@ from django.db import models
 class Game(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     board = models.JSONField(help_text="Stores the 8x8 matrix of the board")
-    current_player = models.JSONField(help_text="The current Player object")
+    current_player_id = models.IntegerField(help_text="The current Player object's id")
     players = models.JSONField(help_text="Array of 2 Player instances")
 
     must_jump_piece = models.JSONField(null=True, blank=True, help_text="{row: int, col: int} if multi-jump locked")
