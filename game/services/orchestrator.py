@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from game.models import Game, MoveEntry
 from .constants import GameConfig, GameRules
@@ -64,10 +65,11 @@ def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
     
     target = next((m for m in valid if m.row == to_dict['row'] and m.col == to_dict['col']), None)
     if not target: raise InvalidMoveError("This move violates the rules of checkers.")
-
     upd = apply_move(current_state, from_pos, target)
-    _update_game_model(game_model, upd)
-    _record_move(game_model, current_state, from_pos, target)
+
+    with transaction.atomic():
+        _update_game_model(game_model, upd)
+        _record_move(game_model, current_state, from_pos, target)
     return game_model
 
 def _get_ids_to_revert(game, player_dir):
