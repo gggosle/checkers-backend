@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from .models import Game
 from .serializers import GameStateSerializer, MovePayloadSerializer
 from .services import orchestrator
-
+from drf_spectacular.utils import extend_schema
 
 class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = Game.objects.all()
@@ -15,11 +15,13 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
             return MovePayloadSerializer
         return GameStateSerializer
 
+    @extend_schema(request=None)
     def create(self, request):
         game = orchestrator.create_new_game()
         serializer = self.get_serializer(game)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    @extend_schema(responses={200: GameStateSerializer})
     @action(detail=True, methods=['post'])
     def move(self, request, pk=None):
         payload = self.get_serializer(data=request.data)
@@ -35,6 +37,7 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         output_serializer = GameStateSerializer(updated_game)
         return Response(output_serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(request=None)
     @action(detail=True, methods=['post'])
     def undo(self, request, pk=None):
         self.get_object()

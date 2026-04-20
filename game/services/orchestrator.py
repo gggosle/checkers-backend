@@ -16,7 +16,7 @@ def create_new_game() -> Game:
     game_model = Game.objects.create(
         board=state_dict['board'],
         players=state_dict['players'],
-        current_player=state_dict['current_player'],
+        current_player_id=state_dict['current_player_id'],
         must_jump_piece=state_dict['must_jump_piece']
     )
 
@@ -33,7 +33,7 @@ def _to_state(model):
 def _update_game_model(model, state: GameState):
     data = asdict(state)
     model.board = data['board']
-    model.current_player_id = data['current_player']
+    model.current_player_id = data['current_player_id']
     model.must_jump_piece = data['must_jump_piece']
     winner = calculate_winner(state)
     if winner: model.winner_id = winner.id
@@ -98,9 +98,10 @@ def revert_last_move(game_id: str) -> Game:
     
     board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
     game.board = [[asdict(c) if c else None for c in row] for row in board]
-    game.current_player_id = next(p for p in game.players if p['move_dir'] == last.player_dir)
+    player_dict = next(p for p in game.players if p['move_dir'] == last.player_dir)
+    game.current_player_id = player_dict['id']
     game.winner = None
-    game.must_jump_piece = _calculate_must_jump_piece(last_move, game.board)
+    game.must_jump_piece = _calculate_must_jump_piece(last_move, board)
 
     game.save()
     return game
