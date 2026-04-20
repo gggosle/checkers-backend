@@ -9,10 +9,10 @@ class Game(models.Model):
     players = models.JSONField(help_text="Array of 2 Player instances")
 
     must_jump_piece = models.JSONField(null=True, blank=True, help_text="{row: int, col: int} if multi-jump locked")
-    winner = models.IntegerField(null=True, blank=True, help_text="ID of the winning player")
+    winner_id = models.IntegerField(null=True, blank=True, help_text="ID of the winning player")
 
     def __str__(self):
-        return f"Game {self.id} - Winner: {self.winner if self.winner else 'Ongoing'}"
+        return f"Game {self.id} - Winner: {self.winner_id if self.winner_id else 'Ongoing'}"
 
 
 class MoveEntry(models.Model):

@@ -39,7 +39,7 @@ def _update_game_model(model, state: GameState):
     model.current_player_id = data['current_player']
     model.must_jump_piece = data['must_jump_piece']
     winner = calculate_winner(state)
-    if winner: model.winner = winner.id
+    if winner: model.winner_id = winner.id
     model.save()
 
 def _record_move(model, cur_state: GameState, from_pos: Position, target):
@@ -56,6 +56,8 @@ def _record_move(model, cur_state: GameState, from_pos: Position, target):
 
 def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
     game_model = get_object_or_404(Game, id=game_id)
+
+    if game_model.winner_id: raise InvalidMoveError("This game is already over.")
     current_state = _to_state(game_model)
     from_pos = Position(row=from_dict['row'], col=from_dict['col'])
     current_player = current_state.current_player
@@ -92,6 +94,6 @@ def revert_last_move(game_id: str) -> Game:
     board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)
     game.board = [[asdict(c) if c else None for c in row] for row in board]
     game.current_player_id = next(p for p in game.players if p['move_dir'] == last.player_dir)
-    game.must_jump_piece, game.winner = None, None
+    game.must_jump_piece, game.winner_id = None, None
     game.save()
     return game
