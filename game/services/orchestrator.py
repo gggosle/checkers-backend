@@ -53,7 +53,7 @@ def _record_move(model, cur_state: GameState, from_pos: Position, target):
     )
 
 def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
-    game_model = Game.objects.get(id=game_id)
+    game_model = get_object_or_404(Game, id=game_id)
     current_state = _to_state(game_model)
     from_pos = Position(row=from_dict['row'], col=from_dict['col'])
     
