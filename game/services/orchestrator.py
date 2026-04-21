@@ -100,7 +100,8 @@ def revert_last_move(game: Game) -> Game:
     player_dict = next(p for p in game.players if p['move_dir'] == last.player_dir)
     game.current_player_id = player_dict['id']
     game.winner_id = None
-    game.must_jump_piece = _calculate_must_jump_piece(last_move, board)
+    must_jump = _calculate_must_jump_piece(last_move, board)
+    game.must_jump_piece = asdict(must_jump) if must_jump else None
 
     game.save()
     return game
