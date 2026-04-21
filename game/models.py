@@ -10,6 +10,7 @@ class Game(models.Model):
 
     must_jump_piece = models.JSONField(null=True, blank=True, help_text="{row: int, col: int} if multi-jump locked")
     winner_id = models.IntegerField(null=True, blank=True, help_text="ID of the winning player")
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Game {self.id} - Winner: {self.winner_id if self.winner_id else 'Ongoing'}"
