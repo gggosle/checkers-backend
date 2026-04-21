@@ -78,7 +78,7 @@ def _get_ids_to_revert(game, player_dir):
         ids.append(m.id)
     return ids
 
-def _calculate_must_jump_piece(last_move: MoveEntry, board: Board):
+def _calculate_must_jump_piece(last_move: MoveRecord, board: Board):
     if last_move and last_move.is_jump:
         further_jumps = has_jump_available(board, last_move.to_pos.row, last_move.to_pos.col)
         if further_jumps:
