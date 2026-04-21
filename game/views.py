@@ -40,9 +40,9 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     @extend_schema(request=None)
     @action(detail=True, methods=['post'])
     def undo(self, request, pk=None):
-        self.get_object()
+        game = self.get_object()
 
-        updated_game = orchestrator.revert_last_move(pk)
+        updated_game = orchestrator.revert_last_move(game)
 
         serializer = self.get_serializer(updated_game)
         return Response(serializer.data, status=status.HTTP_200_OK)

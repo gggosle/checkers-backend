@@ -85,8 +85,7 @@ def _calculate_must_jump_piece(last_move: MoveEntry, board: Board):
             return last_move.to_pos
     return None
 
-def revert_last_move(game_id: str) -> Game:
-    game = get_object_or_404(Game, id=game_id)
+def revert_last_move(game: Game) -> Game:
     last = MoveEntry.objects.filter(game=game).last()
     if not last: return game
     
