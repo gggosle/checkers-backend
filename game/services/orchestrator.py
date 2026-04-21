@@ -5,7 +5,7 @@ from game.models import Game, MoveEntry
 from .constants import GameConfig, GameRules
 from .game_rules import apply_move, get_valid_moves, calculate_winner, any_player_jumps_available, has_jump_available
 from .board_utils import reconstruct_board
-from .entities import GameState, Player, Position, Checker, MoveEntry as EntityMoveEntry, Board
+from .entities import GameState, Player, Position, Checker, MoveRecord, Board
 from .game_utils import create_initial_game_state
 from game.exceptions import InvalidMoveError
 
@@ -92,7 +92,7 @@ def revert_last_move(game: Game) -> Game:
     MoveEntry.objects.filter(id__in=_get_ids_to_revert(game, last.player_dir)).delete()
 
     moves = MoveEntry.objects.filter(game=game)
-    history = [EntityMoveEntry(m.player_dir, Position(**m.from_pos), Position(**m.to_pos), m.is_jump, m.is_promoted) for m in moves]
+    history = [MoveRecord(m.player_dir, Position(**m.from_pos), Position(**m.to_pos), m.is_jump, m.is_promoted) for m in moves]
     last_move = history[-1] if history else None
     
     board = reconstruct_board(history, GameConfig.BOARD_SIZE, GameRules.PIECE_ROWS_COUNT, GameRules.MOVE_DIR_UP, GameRules.MOVE_DIR_DOWN)

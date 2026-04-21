@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import List, Optional
 from .game_rules import is_black_square
-from .entities import Board, Checker, MoveEntry
+from .entities import Board, Checker, MoveRecord
 
 def create_initial_board(board_size: int, piece_rows_count: int, move_dir_up: int, move_dir_down: int) -> Board:
     board: Board = []
@@ -45,7 +45,7 @@ def calculate_initial_piece_count(board_size: int, rows_count: int) -> int:
     return (board_size * rows_count) // 2
 
 
-def reconstruct_board(history: List[MoveEntry], board_size: int, piece_rows: int, dir_up: int, dir_down: int) -> Board:
+def reconstruct_board(history: List[MoveRecord], board_size: int, piece_rows: int, dir_up: int, dir_down: int) -> Board:
     current_board = create_initial_board(board_size, piece_rows, dir_up, dir_down)
 
     for entry in history:
