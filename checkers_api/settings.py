@@ -44,7 +44,7 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER': 'game.exception_handler.custom_exception_handler',
+    'EXCEPTION_HANDLER': 'game.custom_exception_handler.custom_exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_RENDERER_CLASSES': (
         'djangorestframework_camel_case.render.CamelCaseJSONRenderer',
