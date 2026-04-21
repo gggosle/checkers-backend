@@ -22,7 +22,7 @@ def create_new_game() -> Game:
 
     return game_model
 
-def _to_state(model):
+def _to_state(model: Game) -> GameState:
     return GameState(
         board=[[Checker(**c) if c else None for c in row] for row in model.board],
         players=[Player(**p) for p in model.players],
@@ -30,7 +30,7 @@ def _to_state(model):
         must_jump_piece=Position(**model.must_jump_piece) if model.must_jump_piece else None,
     )
 
-def _update_game_model(model, state: GameState):
+def _update_game_model(model: Game, state: GameState) -> None:
     data = asdict(state)
     model.board = data['board']
     model.current_player_id = data['current_player_id']
