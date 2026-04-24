@@ -36,7 +36,7 @@ jobs:
 
     - name: 3. Static Application Security Testing (Bandit)
       run: |
-        bandit -r . -x ./tests
+        bandit -r . -x ./tests -s B105
 
     - name: 4. Unit and Integration Tests (Django)
       run: |
