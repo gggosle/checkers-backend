@@ -50,10 +50,15 @@ def _winner_id_from_allowed_moves(state: GameState, allowed_moves: list[dict]) -
     return next((p.id for p in state.players if p.id != state.current_player_id), None)
 
 
+def _default_ai_player_id(players: list[Player]) -> int:
+    return players[1].id
+
+
 def create_new_game() -> Game:
     state = create_initial_game_state()
     state_dict = asdict(state)
     allowed_moves = _calculate_allowed_moves(state)
+    ai_id = _default_ai_player_id(state.players)
 
     game_model = Game.objects.create(
         board=state_dict['board'],
@@ -61,6 +66,7 @@ def create_new_game() -> Game:
         current_player_id=state_dict['current_player_id'],
         must_jump_piece=state_dict['must_jump_piece'],
         allowed_moves=allowed_moves,
+        ai_player_id=ai_id,
         winner_id=_winner_id_from_allowed_moves(state, allowed_moves),
     )
 
@@ -143,6 +149,35 @@ def _get_or_build_cached_moves(model: Game, state: GameState) -> list[dict]:
     Game.objects.filter(id=model.id).update(allowed_moves=recalculated_moves)
     model.allowed_moves = recalculated_moves
     return recalculated_moves
+
+
+def ensure_allowed_moves(game: Game) -> list[dict]:
+    return _get_or_build_cached_moves(game, _to_state(game))
+
+
+def is_ai_turn(game: Game) -> bool:
+    return (
+        game.ai_player_id is not None
+        and game.current_player_id == game.ai_player_id
+        and game.winner_id is None
+    )
+
+
+def count_total_allowed_moves(allowed_moves: list[dict]) -> int:
+    return sum(len(piece_entry.get('moves', [])) for piece_entry in allowed_moves)
+
+
+def extract_single_allowed_move(allowed_moves: list[dict]) -> tuple[dict, dict] | None:
+    for piece_entry in allowed_moves:
+        from_pos = piece_entry.get('from_pos')
+        if not from_pos:
+            continue
+        for move in piece_entry.get('moves', []):
+            return (
+                {'row': from_pos['row'], 'col': from_pos['col']},
+                {'row': move['row'], 'col': move['col']},
+            )
+    return None
 
 
 def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
@@ -228,3 +263,15 @@ def revert_last_move(game: Game) -> Game:
         _refresh_winner(game)
         game.save()
     return game
+
+
+def revert_last_n_plies(game: Game, plies: int) -> Game:
+    steps = max(plies, 0)
+    current_game = game
+    for _ in range(steps):
+        before = MoveEntry.objects.filter(game=current_game).count()
+        current_game = revert_last_move(current_game)
+        after = MoveEntry.objects.filter(game=current_game).count()
+        if after >= before:
+            break
+    return current_game

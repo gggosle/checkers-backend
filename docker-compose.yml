@@ -7,6 +7,26 @@ services:
       - .:/app
     environment:
       - DEBUG=1
+      - REDIS_URL=redis://redis:6379/0
+      - AI_PROVIDER_STR=${AI_PROVIDER_STR:-random}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    command: python manage.py rqworker default
+    volumes:
+      - .:/app
+    environment:
+      - DEBUG=1
+      - REDIS_URL=redis://redis:6379/0
+      - AI_PROVIDER_STR=${AI_PROVIDER_STR:-random}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+    depends_on:
+      - redis
 
   frontend:
     build: ../REACTive-checkers
@@ -19,3 +39,8 @@ services:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"

@@ -10,6 +10,7 @@ class Game(models.Model):
 
     must_jump_piece = models.JSONField(null=True, blank=True, help_text="{row: int, col: int} if multi-jump locked")
     allowed_moves = models.JSONField(default=list, blank=True, help_text="Cached valid moves for current player")
+    ai_player_id = models.IntegerField(null=True, blank=True, help_text="Player id controlled by AI in single-player")
     winner_id = models.IntegerField(null=True, blank=True, help_text="ID of the winning player")
     created_at = models.DateTimeField(auto_now_add=True)
 
