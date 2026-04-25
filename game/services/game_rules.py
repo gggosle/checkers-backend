@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import List, Optional
-from .entities import Checker, Board, Move, Position, GameState, Player
-from .constants import GameConfig
+
 from dataclasses import replace
+from typing import Optional
+
+from .constants import GameConfig
+from .entities import Board, Checker, GameState, Move, Player, Position
 
 
 def is_black_square(row: int, col: int) -> bool:
@@ -19,17 +21,18 @@ def get_piece(board: Board, row: int, col: int) -> Optional[Checker]:
     return board[row][col]
 
 
-def get_possible_directions(piece: Checker) -> List[dict]:
-    directions = [1, -1] if piece.is_king else [piece.direction]
-    moves = []
-    for dr in directions:
-        for dc in [1, -1]:
-            moves.append({'dr': dr, 'dc': dc})
-    return moves
+def get_possible_directions(piece: Checker) -> list[tuple[int, int]]:
+    row_directions = (1, -1) if piece.is_king else (piece.direction,)
+    return [(dr, dc) for dr in row_directions for dc in (1, -1)]
 
 
-def try_calculate_jump(board: Board, piece: Checker, target_piece: Checker, dr: int, dc: int) -> \
-        Optional[Move]:
+def try_calculate_jump(
+    board: Board,
+    piece: Checker,
+    target_piece: Checker,
+    dr: int,
+    dc: int,
+) -> Optional[Move]:
     if target_piece.color == piece.color:
         return None
 
@@ -46,8 +49,14 @@ def try_calculate_jump(board: Board, piece: Checker, target_piece: Checker, dr: 
     return None
 
 
-def calculate_target_move(board: Board, piece: Checker, row: int, col: int, dr: int, dc: int) -> \
-        Optional[Move]:
+def calculate_target_move(
+    board: Board,
+    piece: Checker,
+    row: int,
+    col: int,
+    dr: int,
+    dc: int,
+) -> Optional[Move]:
     target_row = row + dr
     target_col = col + dc
 
@@ -66,37 +75,34 @@ def has_jump_available(board: Board, row: int, col: int) -> bool:
     if not piece:
         return False
 
-    directions = get_possible_directions(piece)
-    for d in directions:
-        move = calculate_target_move(board, piece, row, col, d['dr'], d['dc'])
+    for dr, dc in get_possible_directions(piece):
+        move = calculate_target_move(board, piece, row, col, dr, dc)
         if move and move.type == 'jump':
             return True
     return False
 
 
-def calculate_potential_moves(board: Board, row: int, col: int) -> List[Move]:
+def calculate_potential_moves(board: Board, row: int, col: int) -> list[Move]:
     piece = get_piece(board, row, col)
     if not piece:
         return []
 
-    moves: List[Move] = []
-    directions = get_possible_directions(piece)
-
-    for d in directions:
-        move = calculate_target_move(board, piece, row, col, d['dr'], d['dc'])
+    moves: list[Move] = []
+    for dr, dc in get_possible_directions(piece):
+        move = calculate_target_move(board, piece, row, col, dr, dc)
         if move:
             moves.append(move)
     return moves
 
 
 def get_valid_moves(
-        board: Board,
-        player_move_dir: int,
-        must_jump_piece: Optional[Position],
-        has_jumps_available: bool,
-        row: int,
-        col: int
-) -> List[Move]:
+    board: Board,
+    player_move_dir: int,
+    must_jump_piece: Optional[Position],
+    has_jumps_available: bool,
+    row: int,
+    col: int,
+) -> list[Move]:
     piece = get_piece(board, row, col)
     if not piece or piece.direction != player_move_dir:
         return []
@@ -111,39 +117,79 @@ def get_valid_moves(
 
     return moves
 
-def any_player_jumps_available(board: Board, player_move_dir: int) -> bool:
-    for r in range(GameConfig.BOARD_SIZE):
-        for c in range(GameConfig.BOARD_SIZE):
-            piece = get_piece(board, r, c)
+
+def _serialize_move(move: Move) -> dict:
+    return {
+        'row': move.row,
+        'col': move.col,
+        'type': move.type,
+        'captured': {'row': move.captured.row, 'col': move.captured.col} if move.captured else None,
+    }
+
+
+def _piece_moves_entry(row: int, col: int, moves: list[Move]) -> dict:
+    return {
+        'from_pos': {'row': row, 'col': col},
+        'moves': [_serialize_move(move) for move in moves],
+    }
+
+
+def _must_jump_piece_moves(
+    board: Board,
+    player_move_dir: int,
+    must_jump_piece: Position,
+) -> list[dict]:
+    moves = get_valid_moves(
+        board, player_move_dir, must_jump_piece, has_jumps_available=True,
+        row=must_jump_piece.row, col=must_jump_piece.col
+    )
+    if not moves:
+        return []
+    return [_piece_moves_entry(must_jump_piece.row, must_jump_piece.col, moves)]
+
+
+def _iter_player_piece_positions(board: Board, player_move_dir: int):
+    for row in range(GameConfig.BOARD_SIZE):
+        for col in range(GameConfig.BOARD_SIZE):
+            piece = get_piece(board, row, col)
             if piece and piece.direction == player_move_dir:
-                if has_jump_available(board, r, c):
-                    return True
-    return False
+                yield row, col
 
 
-def has_any_valid_moves(
-        board: Board,
-        player_move_dir: int,
-        must_jump_piece: Position | None,
-        has_jumps_available: bool
-) -> bool:
-    for r in range(GameConfig.BOARD_SIZE):
-        for c in range(GameConfig.BOARD_SIZE):
-            piece = get_piece(board, r, c)
-            if piece and piece.direction == player_move_dir:
-                moves = get_valid_moves(
-                    board, player_move_dir, must_jump_piece, has_jumps_available, r, c
-                )
-                if len(moves) > 0:
-                    return True
-    return False
+def _collect_player_moves(board: Board, player_move_dir: int) -> tuple[list[dict], list[dict]]:
+    all_moves, jump_moves = [], []
+    for row, col in _iter_player_piece_positions(board, player_move_dir):
+        moves = calculate_potential_moves(board, row, col)
+        if not moves:
+            continue
+        all_moves.append(_piece_moves_entry(row, col, moves))
+        jumps = [move for move in moves if move.type == 'jump']
+        if jumps:
+            jump_moves.append(_piece_moves_entry(row, col, jumps))
+    return all_moves, jump_moves
 
+
+def get_all_valid_moves(
+    board: Board,
+    player_move_dir: int,
+    must_jump_piece: Optional[Position],
+) -> list[dict]:
+    if must_jump_piece:
+        return _must_jump_piece_moves(board, player_move_dir, must_jump_piece)
+    all_moves, jump_moves = _collect_player_moves(board, player_move_dir)
+    return jump_moves if jump_moves else all_moves
 
 def check_promotion(piece: Checker, target_row: int) -> bool:
     if piece.is_king:
         return False
-    return (piece.direction == 1 and target_row == GameConfig.BOARD_SIZE - 1) or \
-        (piece.direction == -1 and target_row == 0)
+    return (
+        (piece.direction == 1 and target_row == GameConfig.BOARD_SIZE - 1)
+        or (piece.direction == -1 and target_row == 0)
+    )
+
+
+def _next_player_id(state: GameState) -> int:
+    return next(p.id for p in state.players if p.id != state.current_player_id)
 
 
 def apply_move(state: GameState, from_pos: Position, to_move: Move) -> GameState:
@@ -167,35 +213,16 @@ def apply_move(state: GameState, from_pos: Position, to_move: Move) -> GameState
     if is_promoted:
         moved_piece.is_king = True
 
-    if is_jump and not is_promoted:
-        if has_jump_available(new_board, to_move.row, to_move.col):
-            return replace(
-                state,
-                board=new_board,
-                must_jump_piece=Position(row=to_move.row, col=to_move.col),
-            )
-
-    next_player_id = next(p.id for p in state.players if p.id != state.current_player_id)
+    if is_jump and not is_promoted and has_jump_available(new_board, to_move.row, to_move.col):
+        return replace(
+            state,
+            board=new_board,
+            must_jump_piece=Position(row=to_move.row, col=to_move.col),
+        )
 
     return replace(
         state,
         board=new_board,
         must_jump_piece=None,
-        current_player_id=next_player_id,
+        current_player_id=_next_player_id(state),
     )
-
-def calculate_winner(state: GameState) -> Player | None:
-    current_player = state.current_player
-    jumps_available = any_player_jumps_available(state.board, current_player.move_dir)
-
-    can_current_player_move = has_any_valid_moves(
-        state.board,
-        current_player.move_dir,
-        state.must_jump_piece,
-        jumps_available
-    )
-
-    if not can_current_player_move:
-        return next((p for p in state.players if p.id != state.current_player_id), None)
-
-    return None

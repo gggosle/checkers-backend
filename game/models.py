@@ -9,6 +9,7 @@ class Game(models.Model):
     players = models.JSONField(help_text="Array of 2 Player instances")
 
     must_jump_piece = models.JSONField(null=True, blank=True, help_text="{row: int, col: int} if multi-jump locked")
+    allowed_moves = models.JSONField(default=list, blank=True, help_text="Cached valid moves for current player")
     winner_id = models.IntegerField(null=True, blank=True, help_text="ID of the winning player")
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -24,6 +25,7 @@ class MoveEntry(models.Model):
     to_pos = models.JSONField(help_text="{row: int, col: int}")
     is_promoted = models.BooleanField(default=False)
     is_jump = models.BooleanField(default=False)
+    allowed_moves = models.JSONField(default=list, blank=True, help_text="Cached next-state valid moves")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
