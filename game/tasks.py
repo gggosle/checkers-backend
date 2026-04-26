@@ -51,17 +51,38 @@ def run_ai_turn(game_id: str) -> dict:
         if orchestrator.count_total_allowed_moves(allowed_moves) == 0:
             return {'status': 'skipped', 'reason': 'no_legal_moves'}
 
-        opponent = OpponentFactory.create()
-        decision = opponent.pick_move(_board_to_int_matrix(game.board), allowed_moves)
-        updated = orchestrator.process_move_request(
-            str(game.id),
-            from_dict=_position_to_dict(decision.from_pos),
-            to_dict=_position_to_dict(decision.to_pos),
-        )
+        while True:
+            move_count = orchestrator.count_total_allowed_moves(allowed_moves)
+            if move_count == 0:
+                break
+
+            if move_count == 1:
+                move_pair = orchestrator.extract_single_allowed_move(allowed_moves)
+            else:
+                opponent = OpponentFactory.create()
+                decision = opponent.pick_move(_board_to_int_matrix(game.board), allowed_moves)
+                move_pair = (
+                    _position_to_dict(decision.from_pos),
+                    _position_to_dict(decision.to_pos),
+                )
+
+            if not move_pair:
+                break
+
+            from_dict, to_dict = move_pair
+            game = orchestrator.process_move_request(
+                str(game.id),
+                from_dict=from_dict,
+                to_dict=to_dict,
+            )
+
+            allowed_moves = orchestrator.ensure_allowed_moves(game)
+            if not game.must_jump_piece:
+                break
 
         return {
             'status': 'completed',
-            'game_id': str(updated.id),
-            'current_player_id': updated.current_player_id,
-            'winner_id': updated.winner_id,
+            'game_id': str(game.id),
+            'current_player_id': game.current_player_id,
+            'winner_id': game.winner_id,
         }

@@ -16,20 +16,6 @@ def _enqueue_ai_turn(game_id: str):
     return queue.enqueue('game.tasks.run_ai_turn', game_id)
 
 
-def _ai_move_count(game: Game) -> int:
-    allowed_moves = orchestrator.ensure_allowed_moves(game)
-    return orchestrator.count_total_allowed_moves(allowed_moves)
-
-
-def _run_single_forced_ai_move(game: Game) -> Game:
-    allowed_moves = orchestrator.ensure_allowed_moves(game)
-    move_pair = orchestrator.extract_single_allowed_move(allowed_moves)
-    if not move_pair:
-        return game
-    from_dict, to_dict = move_pair
-    return orchestrator.process_move_request(str(game.id), from_dict=from_dict, to_dict=to_dict)
-
-
 class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     queryset = Game.objects.all()
 
@@ -56,10 +42,6 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
             to_dict=clean_data['to_pos']
         )
         if not orchestrator.is_ai_turn(updated_game):
-            return Response(GameStateSerializer(updated_game).data, status=status.HTTP_200_OK)
-
-        if _ai_move_count(updated_game) == 1:
-            updated_game = _run_single_forced_ai_move(updated_game)
             return Response(GameStateSerializer(updated_game).data, status=status.HTTP_200_OK)
 
         try:
