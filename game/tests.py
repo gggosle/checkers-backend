@@ -7,7 +7,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import Game, MoveEntry
-from .services import orchestrator
+from . import services
 from .services.constants import GameRules
 from .tasks import run_ai_turn
 
@@ -63,7 +63,7 @@ class GameTests(APITestCase):
 
     def test_ai_worker_uses_random_provider_and_applies_move(self):
         game_id = self._create_game().data['id']
-        orchestrator.process_move_request(
+        services.process_move_request(
             game_id,
             from_dict={'row': 2, 'col': 1},
             to_dict={'row': 3, 'col': 0},
@@ -80,7 +80,7 @@ class GameTests(APITestCase):
         game_id = create_response.data['id']
         initial_board = create_response.data['board']
 
-        orchestrator.process_move_request(
+        services.process_move_request(
             game_id,
             from_dict={'row': 2, 'col': 1},
             to_dict={'row': 3, 'col': 0},

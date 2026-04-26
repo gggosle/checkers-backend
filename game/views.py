@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 
 from .models import Game
 from .serializers import GameStateSerializer, MovePayloadSerializer
-from .services import orchestrator
+from . import services
 from drf_spectacular.utils import extend_schema
 
 
@@ -26,7 +26,7 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
 
     @extend_schema(request=None, responses={201: GameStateSerializer})
     def create(self, request):
-        game = orchestrator.create_new_game()
+        game = services.create_new_game()
         return Response(GameStateSerializer(game).data, status=status.HTTP_201_CREATED)
 
     @extend_schema(responses={200: GameStateSerializer, 202: dict})
@@ -36,12 +36,12 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
         payload.is_valid(raise_exception=True)
 
         clean_data = payload.validated_data
-        updated_game = orchestrator.process_move_request(
+        updated_game = services.process_move_request(
             pk,
             from_dict=clean_data['from_pos'],
             to_dict=clean_data['to_pos']
         )
-        if not orchestrator.is_ai_turn(updated_game):
+        if not services.is_ai_turn(updated_game):
             return Response(GameStateSerializer(updated_game).data, status=status.HTTP_200_OK)
 
         try:
@@ -63,7 +63,7 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def undo(self, request, pk=None):
         with transaction.atomic():
             game = Game.objects.select_for_update().get(id=pk)
-            updated_game = orchestrator.revert_last_n_plies(game, 2)
+            updated_game = services.revert_last_n_plies(game, 2)
 
         serializer = self.get_serializer(updated_game)
         return Response(serializer.data, status=status.HTTP_200_OK)

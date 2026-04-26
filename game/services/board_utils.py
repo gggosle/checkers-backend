@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Optional
-from .game_rules import is_black_square
+from .board_validation import is_black_square
 from .entities import Board, Checker, MoveRecord
 
 def create_initial_board(board_size: int, piece_rows_count: int, move_dir_up: int, move_dir_down: int) -> Board:
