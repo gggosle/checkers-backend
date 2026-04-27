@@ -7,8 +7,9 @@ services:
       - .:/app
     environment:
       - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=checkers_api.settings
       - REDIS_URL=redis://redis:6379/0
-      - AI_PROVIDER_STR=${AI_PROVIDER_STR:-random}
+      - AI_PROVIDER_STR=${AI_PROVIDER_STR:-groq:llama-3.1-8b-instant}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
     depends_on:
@@ -21,10 +22,17 @@ services:
       - .:/app
     environment:
       - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=checkers_api.settings
+      - PYTHONPATH=/app
       - REDIS_URL=redis://redis:6379/0
-      - AI_PROVIDER_STR=${AI_PROVIDER_STR:-random}
+      - AI_PROVIDER_STR=${AI_PROVIDER_STR:-groq:}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - ALL_PROXY=
+      - NO_PROXY=*
     depends_on:
       - redis
 
