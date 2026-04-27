@@ -10,6 +10,7 @@ from .entities import GameState, Move, Player, Position, Checker
 from .game_logic import apply_move, check_promotion
 from .game_queries import state_from_model
 from .move_calculator import get_all_valid_moves
+from .history import revert_last_n_plies
 
 
 def _calculate_allowed_moves(state: GameState) -> list[dict]:
@@ -175,3 +176,9 @@ def process_move_request(game_id: str, from_dict: dict, to_dict: dict) -> Game:
         _update_game_model(game_model, upd, next_allowed_moves)
         _record_move(game_model, current_state, from_pos, target, next_allowed_moves)
     return game_model
+
+def undo_move(game: Game) -> Game:
+    if game.must_jump_piece:
+        return revert_last_n_plies(game, 1)
+    else:
+        return revert_last_n_plies(game, 2)

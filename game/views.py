@@ -63,7 +63,7 @@ class GameViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     def undo(self, request, pk=None):
         with transaction.atomic():
             game = Game.objects.select_for_update().get(id=pk)
-            updated_game = services.revert_last_n_plies(game, 2)
+            updated_game = services.undo_move(game)
 
         serializer = self.get_serializer(updated_game)
         return Response(serializer.data, status=status.HTTP_200_OK)

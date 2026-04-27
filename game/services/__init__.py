@@ -6,8 +6,8 @@ from .move_processor import (
     count_total_allowed_moves,
     extract_single_allowed_move,
     process_move_request,
+    undo_move,
 )
-from .history import revert_last_move, revert_last_n_plies
 
 __all__ = [
     'state_from_model',
@@ -17,6 +17,5 @@ __all__ = [
     'count_total_allowed_moves',
     'extract_single_allowed_move',
     'process_move_request',
-    'revert_last_move',
-    'revert_last_n_plies',
+    'undo_move',
 ]

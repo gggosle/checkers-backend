@@ -1,6 +1,7 @@
 from dataclasses import asdict
 
 from .entities import Board, Checker, GameState, Player, Position
+from game.models import Game
 
 
 def _position_from_dict(data: dict) -> Position:
@@ -15,7 +16,7 @@ def _board_to_json(board: Board) -> list[list[dict | None]]:
     return [[asdict(cell) if cell else None for cell in row] for row in board]
 
 
-def state_from_model(model) -> GameState:
+def state_from_model(model: Game) -> GameState:
     return GameState(
         board=_board_from_json(model.board),
         players=[Player(**p) for p in model.players],

@@ -76,7 +76,7 @@ def _refresh_winner(game: Game) -> None:
     game.winner_id = next((p.id for p in state.players if p.id != state.current_player_id), None) if not get_all_valid_moves(state.board, state.current_player.move_dir, state.must_jump_piece) else None
 
 
-def revert_last_move(game: Game) -> Game:
+def _revert_last_move(game: Game) -> Game:
     last = MoveEntry.objects.filter(game=game).last()
     if not last:
         return game
@@ -91,11 +91,10 @@ def revert_last_move(game: Game) -> Game:
 
 
 def revert_last_n_plies(game: Game, plies: int) -> Game:
-    steps = max(plies, 0)
     current_game = game
-    for _ in range(steps):
+    for _ in range(plies):
         before = MoveEntry.objects.filter(game=current_game).count()
-        current_game = revert_last_move(current_game)
+        current_game = _revert_last_move(current_game)
         after = MoveEntry.objects.filter(game=current_game).count()
         if after >= before:
             break
