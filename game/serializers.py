@@ -18,3 +18,6 @@ class PositionSerializer(serializers.Serializer):
 class MovePayloadSerializer(serializers.Serializer):
     from_pos = PositionSerializer()
     to_pos = PositionSerializer()
+
+class TaskResponseSerializer(serializers.Serializer):
+    task_id = serializers.CharField(help_text="The ID of the background task")

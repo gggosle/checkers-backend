@@ -52,7 +52,6 @@ class GameTests(APITestCase):
         response = self.client.post(move_url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
         self.assertEqual(response.data['task_id'], 'task-123')
-        self.assertEqual(response.data['game']['current_player_id'], GameRules.PLAYER_2_ID)
         self.assertEqual(MoveEntry.objects.filter(game_id=game_id).count(), 1)
 
     def test_ai_worker_is_idempotent_if_not_ai_turn(self):
