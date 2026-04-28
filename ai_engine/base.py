@@ -4,61 +4,21 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List
 
-try:
-    from pydantic import AliasChoices, BaseModel, ConfigDict, Field
-except Exception:
-    AliasChoices = BaseModel = ConfigDict = Field = None
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 
-if BaseModel:
-    class MovePosition(BaseModel):
-        model_config = ConfigDict(extra='forbid')
+class MovePosition(BaseModel):
+    model_config = ConfigDict(extra='forbid')
 
-        row: int = Field(ge=0, le=7)
-        col: int = Field(ge=0, le=7)
-
-
-    class MoveResponse(BaseModel):
-        model_config = ConfigDict(extra='forbid', populate_by_name=True)
-
-        from_pos: MovePosition = Field(validation_alias=AliasChoices('from_pos', 'fromPos'))
-        to_pos: MovePosition = Field(validation_alias=AliasChoices('to_pos', 'toPos'))
-else:
-    @dataclass(frozen=True)
-    class MovePosition:
-        row: int
-        col: int
+    row: int = Field(ge=0, le=7)
+    col: int = Field(ge=0, le=7)
 
 
-    @dataclass(frozen=True)
-    class MoveResponse:
-        from_pos: MovePosition
-        to_pos: MovePosition
+class MoveResponse(BaseModel):
+    model_config = ConfigDict(extra='forbid', populate_by_name=True)
 
-        @classmethod
-        def model_validate(cls, payload: dict):
-            from_payload = payload.get('from_pos') or payload.get('fromPos')
-            to_payload = payload.get('to_pos') or payload.get('toPos')
-            if not isinstance(from_payload, dict) or not isinstance(to_payload, dict):
-                raise ValueError('Invalid move payload.')
-            fr = int(from_payload['row'])
-            fc = int(from_payload['col'])
-            tr = int(to_payload['row'])
-            tc = int(to_payload['col'])
-            for value in (fr, fc, tr, tc):
-                if value < 0 or value > 7:
-                    raise ValueError('Move payload is out of bounds.')
-            return cls(
-                from_pos=MovePosition(fr, fc),
-                to_pos=MovePosition(tr, tc),
-            )
-
-        def model_dump(self) -> dict:
-            return {
-                'from_pos': {'row': self.from_pos.row, 'col': self.from_pos.col},
-                'to_pos': {'row': self.to_pos.row, 'col': self.to_pos.col},
-            }
-
+    from_pos: MovePosition = Field(validation_alias=AliasChoices('from_pos', 'fromPos'))
+    to_pos: MovePosition = Field(validation_alias=AliasChoices('to_pos', 'toPos'))
 
 class BaseOpponent(ABC):
     @abstractmethod

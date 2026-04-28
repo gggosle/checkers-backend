@@ -3,10 +3,7 @@ from __future__ import annotations
 import json
 from typing import List
 
-try:
-    from pydantic import ValidationError
-except Exception:
-    ValidationError = ValueError
+from pydantic import ValidationError
 
 from ai_engine.base import BaseOpponent, MoveResponse, is_allowed_move
 from ai_engine.exceptions import AIConfigurationError, AIHallucinationError, AITimeoutError

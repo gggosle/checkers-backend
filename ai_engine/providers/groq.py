@@ -4,11 +4,8 @@ import json
 from typing import List
 
 from groq import Groq
+from pydantic import ValidationError
 
-try:
-    from pydantic import ValidationError
-except Exception:
-    ValidationError = ValueError
 
 from ai_engine.base import BaseOpponent, MoveResponse, is_allowed_move
 from ai_engine.exceptions import AIConfigurationError, AIHallucinationError, AITimeoutError
