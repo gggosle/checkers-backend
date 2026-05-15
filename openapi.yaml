@@ -1,0 +1,228 @@
+openapi: 3.0.3
+info:
+  title: Checkers API
+  version: 1.0.0
+  description: Backend API for the Reactive Checkers game
+paths:
+  /api/games/:
+    post:
+      operationId: games_create
+      tags:
+      - games
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameState'
+          description: ''
+  /api/games/{id}/:
+    get:
+      operationId: games_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this game.
+        required: true
+      tags:
+      - games
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameState'
+          description: ''
+  /api/games/{id}/move/:
+    post:
+      operationId: games_move_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this game.
+        required: true
+      tags:
+      - games
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovePayload'
+        required: true
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameState'
+          description: ''
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskResponse'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/games/{id}/undo/:
+    post:
+      operationId: games_undo_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this game.
+        required: true
+      tags:
+      - games
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameState'
+          description: ''
+  /api/task-status/{task_id}/:
+    get:
+      operationId: task_status_retrieve
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: string
+        required: true
+      tags:
+      - task-status
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+components:
+  schemas:
+    GameState:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        board:
+          readOnly: true
+          description: Stores the 8x8 matrix of the board
+        currentPlayerId:
+          type: integer
+          readOnly: true
+          description: The current Player object's id
+        players:
+          readOnly: true
+          description: Array of 2 Player instances
+        mustJumpPiece:
+          readOnly: true
+          nullable: true
+          description: '{row: int, col: int} if multi-jump locked'
+        allowedMoves:
+          readOnly: true
+          description: Cached valid moves for current player
+        aiPlayerId:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: Player id controlled by AI in single-player
+        winnerId:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: ID of the winning player
+      required:
+      - aiPlayerId
+      - allowedMoves
+      - board
+      - currentPlayerId
+      - id
+      - mustJumpPiece
+      - players
+      - winnerId
+    MovePayload:
+      type: object
+      properties:
+        fromPos:
+          $ref: '#/components/schemas/Position'
+        toPos:
+          $ref: '#/components/schemas/Position'
+      required:
+      - fromPos
+      - toPos
+    Position:
+      type: object
+      properties:
+        row:
+          type: integer
+          maximum: 7
+          minimum: 0
+        col:
+          type: integer
+          maximum: 7
+          minimum: 0
+      required:
+      - col
+      - row
+    TaskResponse:
+      type: object
+      properties:
+        taskId:
+          type: string
+          description: The ID of the background task
+      required:
+      - taskId
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid

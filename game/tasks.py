@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+from django.db import transaction
+
+from ai_engine.factory import OpponentFactory
+from game.models import Game
+from . import services
+
+try:
+    from django_rq import job
+except Exception:
+    def job(*_args, **_kwargs):
+        def decorator(func):
+            return func
+        return decorator
+
+
+def _board_to_int_matrix(board: list[list[dict | None]]) -> list[list[int]]:
+    matrix: list[list[int]] = []
+    for row in board:
+        encoded_row: list[int] = []
+        for cell in row:
+            if not cell:
+                encoded_row.append(0)
+                continue
+            direction = int(cell.get('direction', 0))
+            if cell.get('is_king'):
+                encoded_row.append(2 if direction > 0 else -2)
+            else:
+                encoded_row.append(1 if direction > 0 else -1)
+        matrix.append(encoded_row)
+    return matrix
+
+
+def _position_to_dict(position) -> dict:
+    if hasattr(position, 'model_dump'):
+        return position.model_dump()
+    return {'row': position.row, 'col': position.col}
+
+
+@job('default', timeout=60)
+def run_ai_turn(game_id: str) -> dict:
+    with transaction.atomic():
+        game = Game.objects.select_for_update().filter(id=game_id).first()
+        if not game:
+            return {'status': 'skipped', 'reason': 'game_not_found'}
+        if not services.is_ai_turn(game):
+            return {'status': 'skipped', 'reason': 'not_ai_turn'}
+
+        allowed_moves = services.ensure_allowed_moves(game)
+        if services.count_total_allowed_moves(allowed_moves) == 0:
+            return {'status': 'skipped', 'reason': 'no_legal_moves'}
+
+        while True:
+            move_count = services.count_total_allowed_moves(allowed_moves)
+            if move_count == 0:
+                break
+
+            if move_count == 1:
+                move_pair = services.extract_single_allowed_move(allowed_moves)
+            else:
+                opponent = OpponentFactory.create()
+                decision = opponent.pick_move(_board_to_int_matrix(game.board), allowed_moves)
+                move_pair = (
+                    _position_to_dict(decision.from_pos),
+                    _position_to_dict(decision.to_pos),
+                )
+
+            if not move_pair:
+                break
+
+            from_dict, to_dict = move_pair
+            game = services.process_move_request(
+                str(game.id),
+                from_dict=from_dict,
+                to_dict=to_dict,
+            )
+
+            allowed_moves = services.ensure_allowed_moves(game)
+            if not game.must_jump_piece:
+                break
+
+        return {
+            'status': 'completed',
+            'game_id': str(game.id),
+            'current_player_id': game.current_player_id,
+            'winner_id': game.winner_id,
+        }

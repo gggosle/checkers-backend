@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import importlib.util
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -42,6 +44,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+
+if importlib.util.find_spec('django_rq') is not None:
+    INSTALLED_APPS.append('django_rq')
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'game.custom_exception_handler.custom_exception_handler',
@@ -146,4 +151,12 @@ SPECTACULAR_SETTINGS = {
         'drf_spectacular.hooks.postprocess_schema_enums',
         'drf_spectacular.contrib.djangorestframework_camel_case.camelize_serializer_fields',
     ],
+}
+
+REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+RQ_QUEUES = {
+    'default': {
+        'URL': REDIS_URL,
+        'DEFAULT_TIMEOUT': 360,
+    },
 }
