@@ -1,6 +1,6 @@
 .venv/
 *.py[cod]
-pycache/
+__pycache__/
 *.so
 .python-version
 
